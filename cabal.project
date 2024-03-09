@@ -1,2 +1,4 @@
 packages:
+    kitchen-sink/
+    rhine-dbus/
     rhine-i3/

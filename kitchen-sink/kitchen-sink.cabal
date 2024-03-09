@@ -1,0 +1,19 @@
+cabal-version:       3.0
+name:                kitchen-sink
+version:             0.1.0.0
+build-type:          Simple
+
+executable kitchen-sink
+    default-language: GHC2021
+    main-is:        Main.hs
+    hs-source-dirs: .
+    build-depends:
+        base,
+        dbus,
+        dunai,
+        exceptions,
+        i3ipc,
+        rhine,
+        rhine-dbus,
+        rhine-i3,
+        time,

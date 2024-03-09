@@ -1,0 +1,65 @@
+cabal-version:       3.0
+name:                rhine-dbus
+version:             0.1.0.0
+synopsis:            DBus frontend for Rhine
+homepage:            https://github.com/ners/rhine-linux/blob/master/rhine-dbus/README.md
+license:             Apache-2.0
+license-file:        LICENCE.md
+author:              ners
+maintainer:          ners@gmx.ch
+bug-reports:         https://github.com/ners/rhine-linux/issues
+category:            FRP
+build-type:          Simple
+extra-source-files:  CHANGELOG.md, README.md
+tested-with:         GHC == { 9.4, 9.6, 9.8 }
+
+source-repository head
+  type:     git
+  location: https://github.com/ners/rhine-linux
+
+common common
+    default-language: GHC2021
+    ghc-options:
+        -Weverything
+        -Wno-unsafe
+        -Wno-missing-safe-haskell-mode
+        -Wno-missing-export-lists
+        -Wno-missing-import-lists
+        -Wno-missing-kind-signatures
+        -Wno-all-missed-specialisations
+    default-extensions:
+        ApplicativeDo
+        BlockArguments
+        DataKinds
+        DefaultSignatures
+        DeriveAnyClass
+        DeriveGeneric
+        DerivingStrategies
+        DerivingVia
+        ExplicitNamespaces
+        LambdaCase
+        NoFieldSelectors
+        NoImplicitPrelude
+        OverloadedLabels
+        OverloadedRecordDot
+        OverloadedStrings
+        PackageImports
+        RecordWildCards
+        RecursiveDo
+        StrictData
+        TypeFamilies
+        ViewPatterns
+    build-depends:
+        base >= 4.16 && < 5,
+
+library
+    import:           common
+    hs-source-dirs:   src
+    exposed-modules:
+        FRP.Rhine.DBus,
+    build-depends:
+        dbus >= 1.2 && < 2,
+        rhine >= 1.2 && < 2,
+        stm,
+        time,
+    other-modules:
