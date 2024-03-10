@@ -2,3 +2,4 @@ packages:
     kitchen-sink/
     rhine-dbus/
     rhine-i3/
+    rhine-udev/

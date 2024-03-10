@@ -12,7 +12,7 @@
       flake = false;
     };
     rhine = {
-      url = "github:ners/rhine/dunai-0.12";
+      url = "github:ners/rhine/never";
       flake = false;
     };
   };
@@ -55,7 +55,7 @@
         (map (removePrefix "./"))
         (map (removeSuffix "/"))
       ];
-      ghcs = [ "ghc94" "ghc96" "ghc98" ];
+      ghcs = [ "ghc92" "ghc94" ];
       overlay = final: prev: lib.pipe prev [
         (prev: {
           haskell = prev.haskell // {
@@ -65,7 +65,16 @@
                 dunai = hfinal.callCabal2nix "dunai" "${inputs.dunai}/dunai" { };
                 rhine = doJailbreak (hfinal.callCabal2nix "rhine" "${inputs.rhine}/rhine" { });
                 i3ipc = doJailbreak (markUnbroken hprev.i3ipc);
+                rhine-linux = final.buildEnv {
+                  name = "rhine-linux-${replaceStrings ["-" "."] ["" ""] hfinal.ghc.name}";
+                  paths = map (pname: hfinal.${pname}) pnames;
+                };
               } // lib.genAttrs pnames (pname: hfinal.callCabal2nix pname (hsSrc ./${pname}) { }));
+          };
+          rhine-linux = final.buildEnv {
+            name = "rhine-linux";
+            paths = map (hp: hp.rhine-linux) (attrValues (lib.filterAttrs (ghc: _: elem ghc ghcs) final.haskell.packages));
+            pathsToLink = ["/lib"];
           };
         })
       ];
@@ -81,10 +90,7 @@
         {
           formatter.${system} = pkgs.nixpkgs-fmt;
           legacyPackages.${system} = pkgs;
-          packages.${system}.default = pkgs.buildEnv {
-            name = "rhine-linux";
-            paths = map (pname: pkgs.haskellPackages.${pname}) pnames;
-          };
+          packages.${system}.default = pkgs.rhine-linux;
           devShells.${system} =
             foreach hps (ghcName: hp: {
               ${ghcName} = hp.shellFor {
