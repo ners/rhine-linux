@@ -1,8 +1,8 @@
 cabal-version:       3.0
-name:                rhine-i3
+name:                rhine-inotify
 version:             0.1.0.0
-synopsis:            i3 frontend for Rhine
-homepage:            https://github.com/ners/rhine-linux/blob/master/rhine-i3/README.md
+synopsis:            INotify frontend for Rhine
+homepage:            https://github.com/ners/rhine-linux/blob/master/rhine-inotify/README.md
 license:             Apache-2.0
 license-file:        LICENCE.md
 author:              ners
@@ -55,11 +55,11 @@ library
     import:           common
     hs-source-dirs:   src
     exposed-modules:
-        FRP.Rhine.I3,
+        FRP.Rhine.INotify,
     build-depends:
-        aeson,
-        exceptions,
-        i3ipc >= 0.2 && < 0.3,
+        hinotify >= 0.4 && < 1,
         rhine >= 1.2 && < 2,
+        stm,
         time,
+        unix,
     other-modules:

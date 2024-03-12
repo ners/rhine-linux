@@ -1,14 +1,60 @@
 cabal-version:       3.0
 name:                kitchen-sink
 version:             0.1.0.0
+synopsis:            All the rhine-linux libraries
+homepage:            https://github.com/ners/rhine-linux/blob/master/kitchen-sink/README.md
+license:             Apache-2.0
+license-file:        LICENCE.md
+author:              ners
+maintainer:          ners@gmx.ch
+bug-reports:         https://github.com/ners/rhine-linux/issues
+category:            FRP
 build-type:          Simple
 
-executable kitchen-sink
+source-repository head
+  type:     git
+  location: https://github.com/ners/rhine-linux
+
+common common
     default-language: GHC2021
-    main-is:        Main.hs
-    hs-source-dirs: .
+    ghc-options:
+        -Weverything
+        -Wno-unsafe
+        -Wno-missing-safe-haskell-mode
+        -Wno-missing-export-lists
+        -Wno-missing-import-lists
+        -Wno-missing-kind-signatures
+        -Wno-all-missed-specialisations
+    default-extensions:
+        ApplicativeDo
+        BlockArguments
+        DataKinds
+        DefaultSignatures
+        DeriveAnyClass
+        DeriveGeneric
+        DerivingStrategies
+        DerivingVia
+        ExplicitNamespaces
+        LambdaCase
+        NoFieldSelectors
+        NoImplicitPrelude
+        OverloadedLabels
+        OverloadedRecordDot
+        OverloadedStrings
+        PackageImports
+        RecordWildCards
+        RecursiveDo
+        StrictData
+        TypeFamilies
+        ViewPatterns
     build-depends:
-        base,
+        base >= 4.16 && < 5,
+
+executable kitchen-sink
+    import:           common
+    hs-source-dirs:   .
+    main-is:          Main.hs
+    build-depends:
         dbus,
         dunai,
         exceptions,
@@ -16,6 +62,6 @@ executable kitchen-sink
         rhine,
         rhine-dbus,
         rhine-i3,
+        rhine-inotify,
         rhine-udev,
-        time,
         udev,

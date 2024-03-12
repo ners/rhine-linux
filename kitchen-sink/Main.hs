@@ -1,32 +1,23 @@
-{-# LANGUAGE ImportQualifiedPost #-}
-{-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE OverloadedRecordDot #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE StrictData #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Main where
 
-import Control.Concurrent (threadDelay)
-import Control.Exception (catch)
-import Control.Monad (forever)
 import Control.Monad.Catch (MonadCatch, catchAll)
 import DBus.Client qualified as DBus
-import Data.Kind (Type)
+import Data.Functor ((<&>))
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.MonadicStreamFunction.Async (concatS)
-import Data.Time (UTCTime (UTCTime), getCurrentTime)
+import Data.Void (absurd)
 import FRP.Rhine
-import FRP.Rhine.Clock.Realtime.Never (Never)
 import FRP.Rhine.DBus (DBusClock (..))
 import FRP.Rhine.I3 (I3Clock (..))
+import FRP.Rhine.INotify (INotifyClock (..))
 import FRP.Rhine.UDev (UDevClock (..))
 import I3IPC.Subscribe qualified as I3
 import System.IO (hPutStrLn, stderr)
 import System.UDev
-    ( Device (..)
+    ( Device
     , getAction
     , getDevnode
     , getDevnum
@@ -37,12 +28,14 @@ import System.UDev
     , getSyspath
     )
 import System.UDev.Monitor (SourceId (..))
+import Prelude
 
 data KitchenSinkEvent
     = DBusTag (Tag DBusClock)
     | I3Tag (Tag I3Clock)
+    | INotifyTag (Tag INotifyClock)
     | UDevTag (Tag UDevClock)
-    deriving (Show)
+    deriving stock (Show)
 
 instance Show Device where
     show dev =
@@ -62,20 +55,24 @@ instance Show Device where
 data KitchenSinkClock = KitchenSinkClock
     { dbusClock :: DBusClock
     , i3Clock :: I3Clock
+    , inotifyClock :: INotifyClock
     , udevClock :: UDevClock
     }
+
+foo :: (Arrow a) => (b1 -> c) -> (a b2 (d1, b1), d2) -> (a b2 (d1, c), d2)
+foo f = first (>>^ second f)
 
 initFallibleClock
     :: ( Clock m cl
        , MonadIO m
        , MonadCatch m
-       , Time cl ~ Time (Never (Tag cl))
+       , Time cl ~ Time Never
        )
     => cl
     -> RunningClockInit m (Time cl) (Tag cl)
 initFallibleClock cl = catchAll (initClock cl) $ \e -> do
     liftIO $ hPutStrLn stderr $ "initFallibleClock: " <> show e
-    initClock Never
+    initClock Never <&> foo absurd
 
 instance Clock IO KitchenSinkClock where
     type Time KitchenSinkClock = UTCTime
@@ -83,18 +80,19 @@ instance Clock IO KitchenSinkClock where
     initClock
         :: KitchenSinkClock
         -> RunningClockInit IO (Time KitchenSinkClock) (Tag KitchenSinkClock)
-    initClock ksc = do
-        (dbusClock, time) <- initFallibleClock ksc.dbusClock
-        (i3Clock, _) <- initFallibleClock ksc.i3Clock
-        (udevClock, _) <- initFallibleClock ksc.udevClock
+    initClock KitchenSinkClock{..} = do
+        clocks <-
+            sequence
+                [ initFallibleClock dbusClock <&> foo DBusTag
+                , initFallibleClock i3Clock <&> foo I3Tag
+                , initFallibleClock inotifyClock <&> foo INotifyTag
+                , initFallibleClock udevClock <&> foo UDevTag
+                ]
         let clock =
                 concatS $
-                    scheduleList
-                        [ dbusClock >>> arr (second DBusTag)
-                        , i3Clock >>> arr (second I3Tag)
-                        , udevClock >>> arr (second UDevTag)
-                        ]
-                        >>> arr NonEmpty.toList
+                    scheduleList (fst <$> clocks)
+                        >>^ NonEmpty.toList
+        let time = snd $ NonEmpty.head clocks
         pure (clock, time)
 
 instance GetClockProxy KitchenSinkClock
@@ -104,4 +102,5 @@ main = flow $ (tagS >>> arrMCl print) @@ KitchenSinkClock{..}
   where
     dbusClock = DBusClock{matchRules = [DBus.matchAny]}
     i3Clock = I3Clock{subscriptions = [I3.Window, I3.Workspace]}
+    inotifyClock = INotifyClock{paths = ["."]}
     udevClock = UDevClock{sourceId = UDevId, filters = []}

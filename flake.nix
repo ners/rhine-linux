@@ -35,25 +35,10 @@
           isDirectory
         ];
       };
-      dropWhile = p: xs:
-        if xs == [ ] then [ ] else
-        let x = head xs; s = tail xs; in
-        if p x then dropWhile p s
-        else xs;
-      takeWhile = p: xs:
-        if xs == [ ] then [ ] else
-        let x = head xs; s = tail xs; in
-        if p x then [ x ] ++ takeWhile p s
-        else [ ];
-      pnames = with lib; pipe ./cabal.project [
-        readFile
-        (splitString "\n")
-        (dropWhile (line: line != "packages:"))
-        tail
-        (takeWhile (hasPrefix "    "))
-        (map (removePrefix "    "))
-        (map (removePrefix "./"))
-        (map (removeSuffix "/"))
+      pnames = with lib; pipe ./. [
+        readDir
+        (filterAttrs (name: type: type == "directory" && readDir ./${name} ? "${name}.cabal"))
+        attrNames
       ];
       ghcs = [ "ghc92" "ghc94" ];
       overlay = final: prev: lib.pipe prev [
@@ -75,6 +60,10 @@
             name = "rhine-linux";
             paths = map (hp: hp.rhine-linux) (attrValues (lib.filterAttrs (ghc: _: elem ghc ghcs) final.haskell.packages));
             pathsToLink = ["/lib"];
+            postBuild = ''
+              ln -s ${final.haskellPackages.rhine-linux}/bin $out/bin
+            '';
+            meta.mainProgram = "kitchen-sink";
           };
         })
       ];
