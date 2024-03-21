@@ -16,6 +16,22 @@
         "type": "github"
       }
     },
+    "dunai-transformers": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1547076830,
+        "narHash": "sha256-ICQ5grJt21gGZDM1NPSn2yAuaUjiNzEv5w/Rxef9CcU=",
+        "owner": "ghc",
+        "repo": "packages-transformers",
+        "rev": "49655191d33912815a9389b764e2d89e92140938",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ghc",
+        "repo": "packages-transformers",
+        "type": "github"
+      }
+    },
     "nix-filter": {
       "locked": {
         "lastModified": 1710156097,
@@ -33,11 +49,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1710451336,
-        "narHash": "sha256-pP86Pcfu3BrAvRO7R64x7hs+GaQrjFes+mEPowCfkxY=",
+        "lastModified": 1710806803,
+        "narHash": "sha256-qrxvLS888pNJFwJdK+hf1wpRCSQcqA6W5+Ox202NDa0=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "d691274a972b3165335d261cc4671335f5c67de9",
+        "rev": "b06025f1533a1e07b6db3e75151caa155d1c7eb3",
         "type": "github"
       },
       "original": {
@@ -67,6 +83,7 @@
     "root": {
       "inputs": {
         "dunai": "dunai",
+        "dunai-transformers": "dunai-transformers",
         "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
         "rhine": "rhine"

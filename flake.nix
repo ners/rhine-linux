@@ -11,6 +11,10 @@
       url = "github:ivanperez-keera/dunai";
       flake = false;
     };
+    dunai-transformers = {
+      url = "github:ghc/packages-transformers";
+      flake = false;
+    };
     rhine = {
       url = "github:ners/rhine/never";
       flake = false;
@@ -41,47 +45,53 @@
         attrNames
       ];
       ghcs = [ "ghc92" "ghc94" ];
+      hpsFor = pkgs:
+        lib.filterAttrs (ghc: _: elem ghc ghcs) pkgs.haskell.packages
+        // { default = pkgs.haskell.packages.ghc94; };
       overlay = final: prev: lib.pipe prev [
         (prev: {
           haskell = prev.haskell // {
             packageOverrides = lib.composeExtensions
               prev.haskell.packageOverrides
               (hfinal: hprev: with prev.haskell.lib.compose; {
-                dunai = hfinal.callCabal2nix "dunai" "${inputs.dunai}/dunai" { };
-                rhine = doJailbreak (hfinal.callCabal2nix "rhine" "${inputs.rhine}/rhine" { });
+                dunai = hfinal.callCabal2nix "dunai" "${inputs.dunai}/dunai" {
+                  transformers = hprev.callCabal2nix "transformers" inputs.dunai-transformers { };
+                };
                 i3ipc = doJailbreak (markUnbroken hprev.i3ipc);
+                rhine = doJailbreak (hfinal.callCabal2nix "rhine" "${inputs.rhine}/rhine" { });
+                time-domain = doJailbreak hprev.time-domain;
                 rhine-linux = final.buildEnv {
                   name = "rhine-linux-${replaceStrings ["-" "."] ["" ""] hfinal.ghc.name}";
                   paths = map (pname: hfinal.${pname}) pnames;
                 };
-              } // lib.genAttrs pnames (pname: hfinal.callCabal2nix pname (hsSrc ./${pname}) { }));
+              }
+              // lib.genAttrs pnames (pname: hfinal.callCabal2nix pname (hsSrc ./${pname}) { }));
           };
           rhine-linux = final.buildEnv {
             name = "rhine-linux";
             paths = map (hp: hp.rhine-linux) (attrValues (lib.filterAttrs (ghc: _: elem ghc ghcs) final.haskell.packages));
-            pathsToLink = ["/lib"];
+            pathsToLink = [ "/lib" ];
             postBuild = ''
-              ln -s ${final.haskellPackages.rhine-linux}/bin $out/bin
+              ln -s ${(hpsFor final).default.rhine-linux}/bin $out/bin
             '';
             meta.mainProgram = "kitchen-sink";
           };
         })
       ];
     in
+    {
+      overlays.default = overlay;
+    }
+    //
     foreach inputs.nixpkgs.legacyPackages
       (system: pkgs':
-        let
-          pkgs = pkgs'.extend overlay;
-          hps =
-            lib.filterAttrs (ghc: _: elem ghc ghcs) pkgs.haskell.packages
-            // { default = pkgs.haskellPackages; };
-        in
+        let pkgs = pkgs'.extend overlay; in
         {
           formatter.${system} = pkgs.nixpkgs-fmt;
           legacyPackages.${system} = pkgs;
           packages.${system}.default = pkgs.rhine-linux;
           devShells.${system} =
-            foreach hps (ghcName: hp: {
+            foreach (hpsFor pkgs) (ghcName: hp: {
               ${ghcName} = hp.shellFor {
                 packages = ps: map (pname: ps.${pname}) pnames;
                 nativeBuildInputs = with hp; [
@@ -92,7 +102,5 @@
               };
             });
         }
-      ) // {
-      overlays.default = overlay;
-    };
+      );
 }
