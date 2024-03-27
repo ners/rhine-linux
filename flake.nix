@@ -16,7 +16,11 @@
       flake = false;
     };
     rhine = {
-      url = "github:ners/rhine/never";
+      url = "github:turion/rhine";
+      flake = false;
+    };
+    ioctl = {
+      url = "github:ners/ioctl";
       flake = false;
     };
   };
@@ -37,6 +41,8 @@
           (matchExt "hs")
           (matchExt "md")
           isDirectory
+          "LICENSE"
+          "README"
         ];
       };
       pnames = with lib; pipe ./. [
@@ -51,25 +57,37 @@
       overlay = final: prev: lib.pipe prev [
         (prev: {
           haskell = prev.haskell // {
-            packageOverrides = lib.composeExtensions
+            packageOverrides = with prev.haskell.lib.compose; lib.composeManyExtensions [
               prev.haskell.packageOverrides
-              (hfinal: hprev: with prev.haskell.lib.compose; {
+              (hfinal: hprev: {
                 dunai = hfinal.callCabal2nix "dunai" "${inputs.dunai}/dunai" {
                   transformers = hprev.callCabal2nix "transformers" inputs.dunai-transformers { };
                 };
+                bindings-libv4l2 = lib.pipe hprev.bindings-libv4l2 [
+                  markUnbroken
+                  doJailbreak
+                  (addPkgconfigDepend prev.libv4l.dev)
+                ];
                 i3ipc = doJailbreak (markUnbroken hprev.i3ipc);
+                ioctl = hfinal.callCabal2nix "ioctl" inputs.ioctl { };
                 rhine = doJailbreak (hfinal.callCabal2nix "rhine" "${inputs.rhine}/rhine" { });
-                time-domain = doJailbreak hprev.time-domain;
                 rhine-linux = final.buildEnv {
                   name = "rhine-linux-${replaceStrings ["-" "."] ["" ""] hfinal.ghc.name}";
                   paths = map (pname: hfinal.${pname}) pnames;
                 };
-              }
-              // lib.genAttrs pnames (pname: hfinal.callCabal2nix pname (hsSrc ./${pname}) { }));
+                time-domain = doJailbreak hprev.time-domain;
+                v4l2 = doJailbreak hprev.v4l2;
+              })
+              (hfinal: hprev: lib.genAttrs pnames (pname: hfinal.callCabal2nix pname (hsSrc ./${pname}) { }))
+            ];
           };
           rhine-linux = final.buildEnv {
             name = "rhine-linux";
-            paths = map (hp: hp.rhine-linux) (attrValues (lib.filterAttrs (ghc: _: elem ghc ghcs) final.haskell.packages));
+            paths = lib.pipe final.haskell.packages [
+              (lib.filterAttrs (ghc: _: elem ghc ghcs))
+              attrValues
+              (map (hp: hp.rhine-linux))
+            ];
             pathsToLink = [ "/lib" ];
             postBuild = ''
               ln -s ${(hpsFor final).default.rhine-linux}/bin $out/bin
@@ -95,7 +113,7 @@
               ${ghcName} = hp.shellFor {
                 packages = ps: map (pname: ps.${pname}) pnames;
                 nativeBuildInputs = with hp; [
-                  cabal-install
+                  pkgs'.haskellPackages.cabal-install
                   fourmolu
                   haskell-language-server
                 ];
