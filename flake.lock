@@ -82,11 +82,11 @@
     "rhine": {
       "flake": false,
       "locked": {
-        "lastModified": 1711461942,
-        "narHash": "sha256-iUM1/icZVJTZ2s+FJ0Lz01FSRIaKJY3H46P1DE1eVMk=",
+        "lastModified": 1711723347,
+        "narHash": "sha256-VIn04i0bqGS2V3SR+XNh9XET3WadrdFBy500ym8XEuE=",
         "owner": "turion",
         "repo": "rhine",
-        "rev": "9b06f58f1650f458c7a69aacf2e63bc983bee63a",
+        "rev": "8c9e74b08e74beb042fa8b8fe32a3ebb82c4e09c",
         "type": "github"
       },
       "original": {

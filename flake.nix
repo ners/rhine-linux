@@ -41,15 +41,32 @@
           (matchExt "hs")
           (matchExt "md")
           isDirectory
-          "LICENSE"
-          "README"
         ];
       };
-      pnames = with lib; pipe ./. [
-        readDir
-        (filterAttrs (name: type: type == "directory" && readDir ./${name} ? "${name}.cabal"))
-        attrNames
+      readDirs = root: attrNames (lib.filterAttrs (_: type: type == "directory") (readDir root));
+      readFiles = root: attrNames (lib.filterAttrs (_: type: type == "regular") (readDir root));
+      basename = path: suffix: with lib; pipe path [
+        (splitString "/")
+        last
+        (removeSuffix suffix)
       ];
+      cabalProjectPackages = root: with lib; foreach (readDirs root) (dir:
+        let
+          path = "${root}/${dir}";
+          files = readFiles path;
+          cabalFiles = filter (strings.hasSuffix ".cabal") files;
+          pnames = map (path: basename path ".cabal") cabalFiles;
+          pname = if pnames == [ ] then null else head pnames;
+        in
+        optionalAttrs (pname != null) { ${pname} = path; }
+      );
+      cabalProjectPnames = root: lib.attrNames (cabalProjectPackages root);
+      cabalProjectOverlay = root: hfinal: hprev: with lib;
+        mapAttrs
+          (pname: path: hfinal.callCabal2nix pname path { })
+          (cabalProjectPackages root);
+      project = hsSrc ./.;
+      pnames = cabalProjectPnames project;
       ghcs = [ "ghc92" "ghc94" ];
       hpsFor = pkgs:
         lib.filterAttrs (ghc: _: elem ghc ghcs) pkgs.haskell.packages
@@ -59,6 +76,9 @@
           haskell = prev.haskell // {
             packageOverrides = with prev.haskell.lib.compose; lib.composeManyExtensions [
               prev.haskell.packageOverrides
+              (cabalProjectOverlay project)
+              (cabalProjectOverlay inputs.dunai)
+              (cabalProjectOverlay inputs.rhine)
               (hfinal: hprev: {
                 dunai = hfinal.callCabal2nix "dunai" "${inputs.dunai}/dunai" {
                   transformers = hprev.callCabal2nix "transformers" inputs.dunai-transformers { };
@@ -70,7 +90,6 @@
                 ];
                 i3ipc = doJailbreak (markUnbroken hprev.i3ipc);
                 ioctl = hfinal.callCabal2nix "ioctl" inputs.ioctl { };
-                rhine = doJailbreak (hfinal.callCabal2nix "rhine" "${inputs.rhine}/rhine" { });
                 rhine-linux = final.buildEnv {
                   name = "rhine-linux-${replaceStrings ["-" "."] ["" ""] hfinal.ghc.name}";
                   paths = map (pname: hfinal.${pname}) pnames;
@@ -78,7 +97,6 @@
                 time-domain = doJailbreak hprev.time-domain;
                 v4l2 = doJailbreak hprev.v4l2;
               })
-              (hfinal: hprev: lib.genAttrs pnames (pname: hfinal.callCabal2nix pname (hsSrc ./${pname}) { }))
             ];
           };
           rhine-linux = final.buildEnv {
