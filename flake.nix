@@ -6,15 +6,6 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nix-filter.url = "github:numtide/nix-filter";
-    dunai = {
-      url = "github:ivanperez-keera/dunai";
-      flake = false;
-    };
-    dunai-transformers = {
-      url = "github:ghc/packages-transformers";
-      flake = false;
-    };
     rhine = {
       url = "github:turion/rhine";
       flake = false;
@@ -34,14 +25,9 @@
         else if isAttrs xs then mapAttrsToList f xs
         else throw "foreach: expected list or attrset but got ${typeOf xs}"
       );
-      hsSrc = root: inputs.nix-filter {
+      hsSrc = root: with lib.fileset; toSource {
         inherit root;
-        include = with inputs.nix-filter.lib; [
-          (matchExt "cabal")
-          (matchExt "hs")
-          (matchExt "md")
-          isDirectory
-        ];
+        fileset = fileFilter (file: any file.hasExt ["cabal" "hs" "md"] || file.type == "directory") ./.;
       };
       readDirs = root: attrNames (lib.filterAttrs (_: type: type == "directory") (readDir root));
       readFiles = root: attrNames (lib.filterAttrs (_: type: type == "regular") (readDir root));
@@ -67,22 +53,20 @@
           (cabalProjectPackages root);
       project = hsSrc ./.;
       pnames = cabalProjectPnames project;
-      ghcs = [ "ghc92" "ghc94" ];
-      hpsFor = pkgs:
-        lib.filterAttrs (ghc: _: elem ghc ghcs) pkgs.haskell.packages
-        // { default = pkgs.haskell.packages.ghc94; };
+      hpsFor = pkgs: with lib;
+        { default = pkgs.haskellPackages; }
+        // filterAttrs
+          (name: hp: match "ghc[0-9]{2}" name != null && versionAtLeast hp.ghc.version "9.2")
+          pkgs.haskell.packages;
       overlay = final: prev: lib.pipe prev [
         (prev: {
           haskell = prev.haskell // {
             packageOverrides = with prev.haskell.lib.compose; lib.composeManyExtensions [
               prev.haskell.packageOverrides
               (cabalProjectOverlay project)
-              (cabalProjectOverlay inputs.dunai)
               (cabalProjectOverlay inputs.rhine)
               (hfinal: hprev: {
-                dunai = hfinal.callCabal2nix "dunai" "${inputs.dunai}/dunai" {
-                  transformers = hprev.callCabal2nix "transformers" inputs.dunai-transformers { };
-                };
+                rhine = dontCheck hprev.rhine;
                 bindings-libv4l2 = lib.pipe hprev.bindings-libv4l2 [
                   markUnbroken
                   doJailbreak
@@ -99,19 +83,20 @@
               })
             ];
           };
-          rhine-linux = final.buildEnv {
-            name = "rhine-linux";
-            paths = lib.pipe final.haskell.packages [
-              (lib.filterAttrs (ghc: _: elem ghc ghcs))
-              attrValues
-              (map (hp: hp.rhine-linux))
-            ];
-            pathsToLink = [ "/lib" ];
-            postBuild = ''
-              ln -s ${(hpsFor final).default.rhine-linux}/bin $out/bin
-            '';
-            meta.mainProgram = "kitchen-sink";
-          };
+          rhine-linux =
+            let hps = hpsFor final; in
+            final.buildEnv {
+              name = "rhine-linux";
+              paths = lib.pipe hps [
+                attrValues
+                (map (hp: hp.rhine-linux))
+              ];
+              pathsToLink = [ "/lib" ];
+              postBuild = ''
+                ln -s ${hps.default.rhine-linux}/bin $out/bin
+              '';
+              meta.mainProgram = hps.default.rhine-linux.meta.mainProgram;
+            };
         })
       ];
     in

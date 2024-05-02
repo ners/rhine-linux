@@ -21,9 +21,7 @@ instance (MonadIO m) => Clock m V4l2Clock where
     initClock V4l2Clock{..} = liftIO do
         device <- liftIO $ openDevice webcam
         void . liftIO $ setFormat device Capture format
-        let
-            clock :: MSF m a (Time V4l2Clock, Tag V4l2Clock)
-            clock = constM $ liftIO do
+        let clock = constM $ liftIO do
                 frame <- withFrame device format $ \ptr _ ->
                     let w = imageWidth format
                         h = imageHeight format

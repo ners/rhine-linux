@@ -8,7 +8,6 @@ import Control.Monad.Catch (MonadCatch, catchAll)
 import DBus.Client qualified as DBus
 import Data.Functor ((<&>))
 import Data.List.NonEmpty qualified as NonEmpty
-import Data.MonadicStreamFunction.Async (concatS)
 import Data.Void (absurd)
 import FRP.Rhine
 import FRP.Rhine.DBus (DBusClock (..))

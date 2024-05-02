@@ -18,9 +18,7 @@ instance (MonadIO m) => Clock m DBusClock where
         client <- connectSession
         events <- newTQueueIO
         for_ matchRules $ \matchRule -> addMatch client matchRule $ atomically . writeTQueue events
-        let
-            clock :: MSF m a (Time DBusClock, Tag DBusClock)
-            clock = constM $ liftIO do
+        let clock = constM $ liftIO do
                 e <- atomically . readTQueue $ events
                 t <- getCurrentTime
                 pure (t, e)
