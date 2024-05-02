@@ -6,18 +6,9 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nix-filter.url = "github:numtide/nix-filter";
-    dunai = {
-      url = "github:ivanperez-keera/dunai";
-      flake = false;
-    };
-    dunai-transformers = {
-      url = "github:ghc/packages-transformers";
-      flake = false;
-    };
     rhine = {
       url = "github:turion/rhine";
-      flake = false;
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     ioctl = {
       url = "github:ners/ioctl";
@@ -34,14 +25,9 @@
         else if isAttrs xs then mapAttrsToList f xs
         else throw "foreach: expected list or attrset but got ${typeOf xs}"
       );
-      hsSrc = root: inputs.nix-filter {
+      hsSrc = root: with lib.fileset; toSource {
         inherit root;
-        include = with inputs.nix-filter.lib; [
-          (matchExt "cabal")
-          (matchExt "hs")
-          (matchExt "md")
-          isDirectory
-        ];
+        fileset = fileFilter (file: any file.hasExt [ "cabal" "hs" "md" ]) ./.;
       };
       readDirs = root: attrNames (lib.filterAttrs (_: type: type == "directory") (readDir root));
       readFiles = root: attrNames (lib.filterAttrs (_: type: type == "regular") (readDir root));
@@ -66,23 +52,20 @@
           (pname: path: hfinal.callCabal2nix pname path { })
           (cabalProjectPackages root);
       project = hsSrc ./.;
-      pnames = cabalProjectPnames project;
-      ghcs = [ "ghc92" "ghc94" ];
-      hpsFor = pkgs:
-        lib.filterAttrs (ghc: _: elem ghc ghcs) pkgs.haskell.packages
-        // { default = pkgs.haskell.packages.ghc94; };
-      overlay = final: prev: lib.pipe prev [
-        (prev: {
+      pnames = filter (pname: pname != "kitchen-sink") (cabalProjectPnames project);
+      hpsFor = pkgs: with lib;
+        { default = pkgs.haskellPackages; }
+        // filterAttrs
+          (name: hp: match "ghc[0-9]{2}" name != null && versionAtLeast hp.ghc.version "9.2")
+          pkgs.haskell.packages;
+      overlay = lib.composeManyExtensions [
+        inputs.rhine.overlays.default
+        (final: prev: {
           haskell = prev.haskell // {
             packageOverrides = with prev.haskell.lib.compose; lib.composeManyExtensions [
               prev.haskell.packageOverrides
               (cabalProjectOverlay project)
-              (cabalProjectOverlay inputs.dunai)
-              (cabalProjectOverlay inputs.rhine)
               (hfinal: hprev: {
-                dunai = hfinal.callCabal2nix "dunai" "${inputs.dunai}/dunai" {
-                  transformers = hprev.callCabal2nix "transformers" inputs.dunai-transformers { };
-                };
                 bindings-libv4l2 = lib.pipe hprev.bindings-libv4l2 [
                   markUnbroken
                   doJailbreak
@@ -90,27 +73,9 @@
                 ];
                 i3ipc = doJailbreak (markUnbroken hprev.i3ipc);
                 ioctl = hfinal.callCabal2nix "ioctl" inputs.ioctl { };
-                rhine-linux = final.buildEnv {
-                  name = "rhine-linux-${replaceStrings ["-" "."] ["" ""] hfinal.ghc.name}";
-                  paths = map (pname: hfinal.${pname}) pnames;
-                };
-                time-domain = doJailbreak hprev.time-domain;
                 v4l2 = doJailbreak hprev.v4l2;
               })
             ];
-          };
-          rhine-linux = final.buildEnv {
-            name = "rhine-linux";
-            paths = lib.pipe final.haskell.packages [
-              (lib.filterAttrs (ghc: _: elem ghc ghcs))
-              attrValues
-              (map (hp: hp.rhine-linux))
-            ];
-            pathsToLink = [ "/lib" ];
-            postBuild = ''
-              ln -s ${(hpsFor final).default.rhine-linux}/bin $out/bin
-            '';
-            meta.mainProgram = "kitchen-sink";
           };
         })
       ];
@@ -121,22 +86,46 @@
     //
     foreach inputs.nixpkgs.legacyPackages
       (system: pkgs':
-        let pkgs = pkgs'.extend overlay; in
+        let
+          pkgs = pkgs'.extend overlay;
+          hps = hpsFor pkgs;
+          bin = pkgs.haskellPackages.callCabal2nix "kitchen-sink" ./kitchen-sink { };
+          name = "rhine-linux";
+          libs = pkgs.buildEnv {
+            name = "${name}-libs";
+            paths = lib.mapCartesianProduct
+              ({ hp, pname }: hp.${pname})
+              { hp = attrValues hps; pname = pnames; };
+            pathsToLink = [ "/lib" ];
+          };
+          docs = pkgs.buildEnv {
+            name = "${name}-docs";
+            paths = map (pname: pkgs.haskell.lib.documentationTarball hps.default.${pname}) pnames;
+          };
+          sdist = pkgs.buildEnv {
+            name = "${name}-sdist";
+            paths = map (pname: pkgs.haskell.lib.sdistTarball hps.default.${pname}) pnames;
+          };
+          docsAndSdist = pkgs.linkFarm "${name}-docsAndSdist" { inherit docs sdist; };
+          all = pkgs.symlinkJoin {
+            name = "${name}-all";
+            paths = [ bin libs docsAndSdist ];
+          };
+        in
         {
           formatter.${system} = pkgs.nixpkgs-fmt;
           legacyPackages.${system} = pkgs;
-          packages.${system}.default = pkgs.rhine-linux;
-          devShells.${system} =
-            foreach (hpsFor pkgs) (ghcName: hp: {
-              ${ghcName} = hp.shellFor {
-                packages = ps: map (pname: ps.${pname}) pnames;
-                nativeBuildInputs = with hp; [
-                  pkgs'.haskellPackages.cabal-install
-                  fourmolu
-                  haskell-language-server
-                ];
-              };
-            });
+          packages.${system}.default = all;
+          devShells.${system} = foreach hps (ghcName: hp: {
+            ${ghcName} = hp.shellFor {
+              packages = ps: map (pname: ps.${pname}) pnames;
+              nativeBuildInputs = with hp; [
+                pkgs'.haskellPackages.cabal-install
+                fourmolu
+                haskell-language-server
+              ];
+            };
+          });
         }
       );
 }

@@ -57,7 +57,6 @@ executable kitchen-sink
     build-depends:
         JuicyPixels,
         dbus,
-        dunai,
         exceptions,
         i3ipc,
         rhine,

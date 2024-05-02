@@ -1,37 +1,5 @@
 {
   "nodes": {
-    "dunai": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1708598184,
-        "narHash": "sha256-PxZRFNoVlRRmx7IyeIa1F6uo1wqQVuabTMcXDMOXwoY=",
-        "owner": "ivanperez-keera",
-        "repo": "dunai",
-        "rev": "975a3b1bf1b1ea8ce29ba11fe1c789751a4595bb",
-        "type": "github"
-      },
-      "original": {
-        "owner": "ivanperez-keera",
-        "repo": "dunai",
-        "type": "github"
-      }
-    },
-    "dunai-transformers": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1547076830,
-        "narHash": "sha256-ICQ5grJt21gGZDM1NPSn2yAuaUjiNzEv5w/Rxef9CcU=",
-        "owner": "ghc",
-        "repo": "packages-transformers",
-        "rev": "49655191d33912815a9389b764e2d89e92140938",
-        "type": "github"
-      },
-      "original": {
-        "owner": "ghc",
-        "repo": "packages-transformers",
-        "type": "github"
-      }
-    },
     "ioctl": {
       "flake": false,
       "locked": {
@@ -48,28 +16,13 @@
         "type": "github"
       }
     },
-    "nix-filter": {
-      "locked": {
-        "lastModified": 1710156097,
-        "narHash": "sha256-1Wvk8UP7PXdf8bCCaEoMnOT1qe5/Duqgj+rL8sRQsSM=",
-        "owner": "numtide",
-        "repo": "nix-filter",
-        "rev": "3342559a24e85fc164b295c3444e8a139924675b",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "nix-filter",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1711523803,
-        "narHash": "sha256-UKcYiHWHQynzj6CN/vTcix4yd1eCu1uFdsuarupdCQQ=",
+        "lastModified": 1728888510,
+        "narHash": "sha256-nsNdSldaAyu6PE3YUA+YQLqUDJh+gRbBooMMekZJwvI=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "2726f127c15a4cc9810843b96cad73c7eb39e443",
+        "rev": "a3c0b3b21515f74fd2665903d4ce6bc4dc81c77c",
         "type": "github"
       },
       "original": {
@@ -80,13 +33,17 @@
       }
     },
     "rhine": {
-      "flake": false,
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
       "locked": {
-        "lastModified": 1711723347,
-        "narHash": "sha256-VIn04i0bqGS2V3SR+XNh9XET3WadrdFBy500ym8XEuE=",
+        "lastModified": 1728026048,
+        "narHash": "sha256-IeX7UBF/H4m6RvU9HUYAxv+BhIhsDHo2tv34m2ChoQM=",
         "owner": "turion",
         "repo": "rhine",
-        "rev": "8c9e74b08e74beb042fa8b8fe32a3ebb82c4e09c",
+        "rev": "3ecb50a2cf2aaeafb26d51ddeb11c8bea6ae2599",
         "type": "github"
       },
       "original": {
@@ -97,10 +54,7 @@
     },
     "root": {
       "inputs": {
-        "dunai": "dunai",
-        "dunai-transformers": "dunai-transformers",
         "ioctl": "ioctl",
-        "nix-filter": "nix-filter",
         "nixpkgs": "nixpkgs",
         "rhine": "rhine"
       }

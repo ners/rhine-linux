@@ -20,10 +20,7 @@ instance (MonadIO m, MonadThrow m) => Clock m I3Clock where
     initClock I3Clock{..} = do
         client <- connecti3
         void $ sendMsgPayload client Subscribe $ encode subscriptions
-        let
-            getEvent :: m (Tag I3Clock)
-            getEvent = either (const getEvent) pure =<< receiveEvent client
-            clock :: MSF m a (Time I3Clock, Tag I3Clock)
+        let getEvent = either (const getEvent) pure =<< receiveEvent client
             clock = constM do
                 e <- getEvent
                 t <- liftIO getCurrentTime

@@ -19,9 +19,7 @@ instance (MonadIO m) => Clock m INotifyClock where
         inotify <- initINotify
         events <- newTQueueIO
         for_ paths $ \path -> addWatch inotify [AllEvents] path $ atomically . writeTQueue events
-        let
-            clock :: MSF m a (Time INotifyClock, Tag INotifyClock)
-            clock = constM $ liftIO do
+        let clock = constM $ liftIO do
                 e <- atomically . readTQueue $ events
                 t <- getCurrentTime
                 pure (t, e)

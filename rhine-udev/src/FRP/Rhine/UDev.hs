@@ -41,9 +41,7 @@ instance (MonadIO m) => Clock m UDevClock where
             Subsystem{..} -> filterAddMatchSubsystemDevtype monitor subsystem deviceType
             Tag{..} -> filterAddMatchTag monitor tag
         enableReceiving monitor
-        let
-            clock :: MSF m a (Time UDevClock, Tag UDevClock)
-            clock = constM $ liftIO do
+        let clock = constM $ liftIO do
                 d <- receiveDevice monitor
                 t <- getCurrentTime
                 pure (t, d)
