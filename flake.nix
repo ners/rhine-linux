@@ -56,7 +56,7 @@
       hpsFor = pkgs: with lib;
         { default = pkgs.haskellPackages; }
         // filterAttrs
-          (name: hp: match "ghc[0-9]{2}" name != null && versionAtLeast hp.ghc.version "9.2")
+          (name: hp: match "ghc[0-9]{2}" name != null && versionAtLeast hp.ghc.version "9.6")
           pkgs.haskell.packages;
       overlay = lib.composeManyExtensions [
         inputs.rhine.overlays.default
