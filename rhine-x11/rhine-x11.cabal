@@ -1,8 +1,8 @@
 cabal-version:       3.0
-name:                kitchen-sink
+name:                rhine-x11
 version:             0.1.0.0
-synopsis:            All the rhine-linux libraries
-homepage:            https://github.com/ners/rhine-linux/blob/master/kitchen-sink/README.md
+synopsis:            x11 frontend for Rhine
+homepage:            https://github.com/ners/rhine-linux/blob/master/rhine-x11/README.md
 license:             Apache-2.0
 license-file:        LICENCE.md
 author:              ners
@@ -10,6 +10,7 @@ maintainer:          ners@gmx.ch
 bug-reports:         https://github.com/ners/rhine-linux/issues
 category:            FRP
 build-type:          Simple
+extra-source-files:  CHANGELOG.md, README.md
 
 source-repository head
   type:     git
@@ -50,23 +51,15 @@ common common
     build-depends:
         base >= 4.16 && < 5,
 
-executable kitchen-sink
+library
     import:           common
-    hs-source-dirs:   .
-    main-is:          Main.hs
+    hs-source-dirs:   src
+    exposed-modules:
+        FRP.Rhine.X11,
     build-depends:
-        JuicyPixels,
-        dbus,
+        aeson,
         exceptions,
-        i3ipc,
-        rhine,
-        rhine-dbus,
-        rhine-evdev,
-        rhine-i3,
-        rhine-inotify,
-        rhine-udev,
-        rhine-v4l2,
-        rhine-x11,
-        udev,
-        vector,
-        v4l2,
+        rhine >= 1.2 && < 2,
+        X11 >= 1.10 && < 1.11,
+        time,
+    other-modules:

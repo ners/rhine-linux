@@ -17,6 +17,7 @@ import FRP.Rhine.I3 (I3Clock (..))
 import FRP.Rhine.INotify (INotifyClock (..))
 import FRP.Rhine.UDev (UDevClock (..), UDevFilter (..))
 import FRP.Rhine.V4l2 (V4l2Clock (..))
+import FRP.Rhine.X11 (X11Clock (..))
 import Graphics.V4L2 qualified as V4L2
 import I3IPC.Subscribe qualified as I3
 import System.IO (hPutStrLn, stderr)
@@ -31,6 +32,7 @@ data KitchenSinkEvent
     | INotifyTag (Tag INotifyClock)
     | UDevTag (Tag UDevClock)
     | V4l2Tag (Tag V4l2Clock)
+    | X11Tag (Tag X11Clock)
     deriving stock (Show)
 
 instance Show UDev.Device where
@@ -65,6 +67,7 @@ data KitchenSinkClock = KitchenSinkClock
     , inotifyClock :: INotifyClock
     , udevClock :: UDevClock
     , v4l2Clock :: V4l2Clock
+    , x11Clock :: X11Clock
     }
     deriving stock (Show)
 
@@ -81,6 +84,8 @@ deriving stock instance Show UDevClock
 deriving stock instance Show UDevFilter
 
 deriving stock instance Show V4l2Clock
+
+deriving stock instance Show X11Clock
 
 (<@@)
     :: (Functor f, Arrow a)
@@ -117,6 +122,7 @@ instance Clock IO KitchenSinkClock where
                 , initFallibleClock inotifyClock <@@ INotifyTag
                 , initFallibleClock udevClock <@@ UDevTag
                 , initFallibleClock v4l2Clock <@@ V4l2Tag
+                , initFallibleClock x11Clock <@@ X11Tag
                 ]
         let clock =
                 concatS $
@@ -152,3 +158,4 @@ main = flow $ (tagS >>> arrMCl print) @@ KitchenSinkClock{..}
                         , imageColorSpace = V4L2.ColorJPEG
                         }
             }
+    x11Clock = X11Clock{displayName = Nothing}
