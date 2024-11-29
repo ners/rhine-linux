@@ -3,7 +3,7 @@
 
 module Main where
 
-import Codec.Picture (Image(..), PixelRGB8)
+import Codec.Picture (Image (..), PixelRGB8)
 import Control.Monad.Catch (MonadCatch, catchAll)
 import DBus.Client qualified as DBus
 import Data.Functor ((<&>))

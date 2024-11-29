@@ -16,13 +16,34 @@
         "type": "github"
       }
     },
+    "monad-schedule": {
+      "inputs": {
+        "nixpkgs": [
+          "rhine",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1731107003,
+        "narHash": "sha256-au6hQM8V4lZtYiwYZl88pAr7xNtFit3pQR0AXvUTuyo=",
+        "owner": "turion",
+        "repo": "monad-schedule",
+        "rev": "f6651c56975bd9e126b9d1d5c8eed0a304d38a30",
+        "type": "github"
+      },
+      "original": {
+        "owner": "turion",
+        "repo": "monad-schedule",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1729070438,
-        "narHash": "sha256-KOTTUfPkugH52avUvXGxvWy8ibKKj4genodIYUED+Kc=",
+        "lastModified": 1732521221,
+        "narHash": "sha256-2ThgXBUXAE1oFsVATK1ZX9IjPcS4nKFOAjhPNKuiMn0=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "5785b6bb5eaae44e627d541023034e1601455827",
+        "rev": "4633a7c72337ea8fd23a4f2ba3972865e3ec685d",
         "type": "github"
       },
       "original": {
@@ -34,16 +55,17 @@
     },
     "rhine": {
       "inputs": {
+        "monad-schedule": "monad-schedule",
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1728026048,
-        "narHash": "sha256-IeX7UBF/H4m6RvU9HUYAxv+BhIhsDHo2tv34m2ChoQM=",
+        "lastModified": 1732869336,
+        "narHash": "sha256-yBMc3eaIl+WyHvZi852FA1ABVaLpLWCfwPcdGIGR7OE=",
         "owner": "turion",
         "repo": "rhine",
-        "rev": "3ecb50a2cf2aaeafb26d51ddeb11c8bea6ae2599",
+        "rev": "4174dd6b40180318e7e568ff9b703824e95434a6",
         "type": "github"
       },
       "original": {
