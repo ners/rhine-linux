@@ -34,14 +34,13 @@ instance (MonadIO m) => Clock m X11Clock where
     initClock X11Clock{..} = liftIO do
         display <- openDisplay $ fromMaybe "" displayName
         let root = defaultRootWindow display
-        allocaSetWindowAttributes $ \setWindowAttrsPtr -> do
+        allocaSetWindowAttributes \setWindowAttrsPtr -> do
             set_event_mask setWindowAttrsPtr propertyChangeMask
             changeWindowAttributes display root cWEventMask setWindowAttrsPtr
         let clock = constM . liftIO . allocaXEvent $ \eventPtr -> do
                 rrData <- xrrQueryExtension display
-                let rrUpdate = when (isJust rrData) . void . xrrUpdateConfiguration
                 nextEvent display eventPtr
-                rrUpdate eventPtr
+                when (isJust rrData) . void . xrrUpdateConfiguration $ eventPtr
                 e <- getEvent eventPtr
                 t <- getCurrentTime
                 pure (t, e)
